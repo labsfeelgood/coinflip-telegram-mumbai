@@ -2,22 +2,56 @@ const { Markup } = require("telegraf");
 const { formatBalance, getBalance } = require("./account-utils");
 const { CHAIN } = require("../config");
 
+// get wallet total balance
+async function getWalletTotalBalance(walletAddress, selectedChainObjKey = "") {
+  let totalWalletBalanceInEth = "";
+  const totalWalletBalance = {};
+
+  for (const chainKey in CHAIN) {
+    if (selectedChainObjKey && selectedChainObjKey !== chainKey) {
+      continue;
+    }
+
+    const walletBalanceInEth = await getBalance(
+      CHAIN[chainKey].rpcUrl,
+      walletAddress
+    );
+    totalWalletBalance[CHAIN[chainKey].currency] = walletBalanceInEth;
+
+    if (totalWalletBalanceInEth === "") {
+      totalWalletBalanceInEth += `${formatBalance(walletBalanceInEth)} ${
+        CHAIN[chainKey].currency
+      }`;
+    } else {
+      totalWalletBalanceInEth += ` | ${formatBalance(walletBalanceInEth)} ${
+        CHAIN[chainKey].currency
+      }`;
+    }
+  }
+
+  return { totalWalletBalanceInEth, totalWalletBalance };
+}
+
 // get selected wallet html
-async function getSelectedWalletHtml(selectedWallet, prefixWithMessage = "") {
-  const walletBalanceInEth = await getBalance(
-    CHAIN.rpcUrl,
-    selectedWallet.address
+async function getSelectedWalletHtml(
+  selectedWallet,
+  prefixWithMessage = "",
+  selectedChainObjKey = ""
+) {
+  const { totalWalletBalanceInEth } = await getWalletTotalBalance(
+    selectedWallet.address,
+    selectedChainObjKey
   );
 
   if (prefixWithMessage === "") {
-    prefixWithMessage = `Selected Chain: ${CHAIN.name}\n\nSelected Wallet\n\n`;
+    prefixWithMessage = `Selected Chain: ${CHAIN[selectedChainObjKey].name}\n\nSelected Wallet\n\n`;
   }
 
   return `${prefixWithMessage}Wallet <b>${
     selectedWallet.name
-  }</b>:\nAddress: ${makeItClickable(selectedWallet.address)}\n${formatBalance(
-    walletBalanceInEth
-  )} ${CHAIN.currency}`;
+  }</b>:\nAddress: ${makeItClickable(
+    selectedWallet.address
+  )}\n${totalWalletBalanceInEth}`;
 }
 
 // get wallet by name
@@ -44,47 +78,73 @@ function createCallBackBtn(btnLabel, cbActionCommand) {
   return Markup.button.callback(btnLabel, cbActionCommand);
 }
 
-async function walletsList(wallets) {
+async function walletsList(wallets, selectedChainObjKey = "") {
   let htmlMessage = "";
-  let balance = 0;
+  const totalBalance = {};
 
   for (const wallet of wallets) {
     try {
-      const walletBalanceInEth = await getBalance(CHAIN.rpcUrl, wallet.address);
+      const { totalWalletBalanceInEth, totalWalletBalance } =
+        await getWalletTotalBalance(wallet.address, selectedChainObjKey);
 
-      balance += walletBalanceInEth;
+      for (const chainCurrency in totalWalletBalance) {
+        totalBalance[chainCurrency] = formatBalance(
+          totalWalletBalance[chainCurrency] + (totalBalance[chainCurrency] ?? 0)
+        );
+      }
+
       htmlMessage += `Wallet <b>${wallet.name}</b>:\nAddress: ${makeItClickable(
         wallet.address
-      )}\n<b>${formatBalance(walletBalanceInEth)} ${CHAIN.currency}</b>\n\n`;
+      )}\n<b>${totalWalletBalanceInEth}</b>\n\n`;
     } catch (error) {
       console.log("walletsList-error", error);
     }
   }
+
+  const balance = Object.keys(totalBalance).reduce((acc, currCurrency) => {
+    if (acc === "") {
+      return `${totalBalance[currCurrency]} ${currCurrency}`;
+    } else {
+      return (acc += ` | ${totalBalance[currCurrency]} ${currCurrency}`);
+    }
+  }, "");
 
   return { htmlMessage, balance };
 }
 
 // show Menu commands
 async function menuCommand(ctx, wallets) {
+  const processingReply = await ctx.reply("processing...");
   let htmlMessage = "👛 Balances (Combined):\n";
 
   if (wallets && wallets.length) {
     const { balance, htmlMessage: _htmlMessage } = await walletsList(wallets);
-    htmlMessage += `<b>${formatBalance(balance)} ${
-      CHAIN.currency
-    }</b>\n\n${_htmlMessage}`;
+    htmlMessage += `<b>${balance}</b>\n\n${_htmlMessage}`;
   } else {
-    htmlMessage += `<b>0.000 ${CHAIN.currency}</b>`;
+    let nullTotalBalance = "";
+
+    for (const chainKey in CHAIN) {
+      if (nullTotalBalance === "") {
+        nullTotalBalance += `0.000 ${CHAIN[chainKey].currency}`;
+      } else {
+        nullTotalBalance += ` | 0.000 ${CHAIN[chainKey].currency}`;
+      }
+    }
+
+    htmlMessage += `<b>${nullTotalBalance}</b>`;
   }
 
   const walletsButton = createCallBackBtn("Wallets", "wallets");
   const inlineKeyboard = [[walletsButton]];
+
+  ctx.deleteMessage(processingReply.message_id);
   replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
 }
 
 // show Wallets commands
 async function walletsCommand(ctx, wallets) {
   let htmlMessage = "";
+  const processingReply = await ctx.reply("processing...");
 
   const importWalletBtn = createCallBackBtn(
     "🔌 Import an Existing Wallet",
@@ -106,12 +166,18 @@ async function walletsCommand(ctx, wallets) {
       "❌ Delete Wallet",
       "btn-delete-wallet"
     );
-    const testnetChainBtn = createCallBackBtn(
-      `🔌 ${CHAIN.name}`,
-      CHAIN.cbActionKey
-    );
 
-    inlineKeyboard.push([deleteWalletBtn], [testnetChainBtn]);
+    const chainBtns = [];
+    for (const chainKey in CHAIN) {
+      chainBtns.push(
+        createCallBackBtn(
+          `🔌 ${CHAIN[chainKey].name}`,
+          CHAIN[chainKey].cbActionKey
+        )
+      );
+    }
+    inlineKeyboard.push([deleteWalletBtn], chainBtns);
+
     const { htmlMessage: _htmlMessage } = await walletsList(wallets);
     htmlMessage += `${_htmlMessage}\n👇 Pick a chain we're interacting with:`;
   } else {
@@ -121,12 +187,18 @@ async function walletsCommand(ctx, wallets) {
 
   inlineKeyboard.push([backToMenuBtn]);
 
+  ctx.deleteMessage(processingReply.message_id);
   replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
 }
 
 // show chain action
 async function chainAction(ctx, wallets) {
-  const { htmlMessage: _htmlMessage } = await walletsList(wallets);
+  const processingReply = await ctx.reply("processing...");
+
+  const { htmlMessage: _htmlMessage } = await walletsList(
+    wallets,
+    ctx.session.selectedChainObjKey
+  );
   const htmlMessage = `Select Wallet:\n\n${_htmlMessage}`;
 
   const walletsBtns = wallets.map((wallet) => {
@@ -138,15 +210,20 @@ async function chainAction(ctx, wallets) {
   );
   const inlineKeyboard = [walletsBtns, [backToWalletsBtn]];
 
+  ctx.deleteMessage(processingReply.message_id);
   replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
 }
 
 // show dynamic wallet action
 async function dynamicWalletAction(ctx, wallet) {
-  const htmlMessage = await getSelectedWalletHtml(wallet);
+  const htmlMessage = await getSelectedWalletHtml(
+    wallet,
+    "",
+    ctx.session.selectedChainObjKey
+  );
 
   const sendCoinBtn = createCallBackBtn(
-    `📤 Send ${CHAIN.currency}`,
+    `📤 Send ${CHAIN[ctx.session.selectedChainObjKey].currency}`,
     "send-coin"
   );
   const sendTokenBtn = createCallBackBtn(`📤 Send Token`, "send-token");
@@ -165,6 +242,8 @@ const deleteWalletWarningMsg =
 
 // show delete wallet action
 async function btnDeleteWalletAction(ctx, wallets) {
+  const processingReply = await ctx.reply("processing...");
+
   const { htmlMessage: _htmlMessage } = await walletsList(wallets);
   const htmlMessage = `Please select a wallet to delete:\n\n${_htmlMessage}\n\n${deleteWalletWarningMsg}`;
 
@@ -177,6 +256,7 @@ async function btnDeleteWalletAction(ctx, wallets) {
   );
   const inlineKeyboard = [walletsBtns, [backToMenuBtn]];
 
+  ctx.deleteMessage(processingReply.message_id);
   replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
 }
 

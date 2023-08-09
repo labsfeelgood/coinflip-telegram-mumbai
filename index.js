@@ -71,6 +71,7 @@ bot.action("back-to-main-menu", async (ctx) => {
 bot.action("back-to-wallets", async (ctx) => {
   ctx.deleteMessage();
   delete ctx.session.selectedWalletName;
+  delete ctx.session.selectedChainObjKey;
   await walletsCommand(ctx, ctx.session.wallets);
 });
 
@@ -84,12 +85,33 @@ bot.action("generate-wallet-seed", (ctx) => {
   ctx.scene.enter(generateWalletSeedScene);
 });
 
-// send buttons
+// chain buttons
 
-bot.action(CHAIN.cbActionKey, async (ctx) => {
+bot.action(CHAIN["mumbai-testnet"].cbActionKey, async (ctx) => {
   ctx.deleteMessage();
+  ctx.session.selectedChainObjKey = "mumbai-testnet";
   await chainAction(ctx, ctx.session.wallets);
 });
+
+bot.action(CHAIN["ethereum"].cbActionKey, async (ctx) => {
+  ctx.deleteMessage();
+  ctx.session.selectedChainObjKey = "ethereum";
+  await chainAction(ctx, ctx.session.wallets);
+});
+
+bot.action(CHAIN["polygon"].cbActionKey, async (ctx) => {
+  ctx.deleteMessage();
+  ctx.session.selectedChainObjKey = "polygon";
+  await chainAction(ctx, ctx.session.wallets);
+});
+
+bot.action(CHAIN["bsc"].cbActionKey, async (ctx) => {
+  ctx.deleteMessage();
+  ctx.session.selectedChainObjKey = "bsc";
+  await chainAction(ctx, ctx.session.wallets);
+});
+
+// send buttons
 
 bot.action(/^wallet-/, async (ctx) => {
   ctx.deleteMessage();

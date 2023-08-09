@@ -42,8 +42,10 @@ function formatEther(value) {
   return ethers.utils.formatEther(value ?? 0);
 }
 
-async function sendToken(amount, to, privateKey) {
-  const provider = new ethers.providers.JsonRpcProvider(CHAIN.rpcUrl);
+async function sendToken(amount, to, privateKey, selectedChainObjKey) {
+  const provider = new ethers.providers.JsonRpcProvider(
+    CHAIN[selectedChainObjKey].rpcUrl
+  );
   const wallet = new ethers.Wallet(decrypt(privateKey), provider);
 
   const tx = {
@@ -55,8 +57,16 @@ async function sendToken(amount, to, privateKey) {
   return { transaction };
 }
 
-async function sendERC20Token(tokenAddress, amount, to, privateKey) {
-  const provider = new ethers.providers.JsonRpcProvider(CHAIN.rpcUrl);
+async function sendERC20Token(
+  tokenAddress,
+  amount,
+  to,
+  privateKey,
+  selectedChainObjKey
+) {
+  const provider = new ethers.providers.JsonRpcProvider(
+    CHAIN[selectedChainObjKey].rpcUrl
+  );
   const wallet = new ethers.Wallet(decrypt(privateKey), provider);
   const tokenContract = new ethers.Contract(tokenAddress, TOKEN_ABI, wallet);
 
@@ -67,14 +77,22 @@ async function sendERC20Token(tokenAddress, amount, to, privateKey) {
   return { transaction };
 }
 
-async function getERC20TokenSymbol(tokenAddress) {
-  const provider = new ethers.providers.JsonRpcProvider(CHAIN.rpcUrl);
+async function getERC20TokenSymbol(tokenAddress, selectedChainObjKey) {
+  const provider = new ethers.providers.JsonRpcProvider(
+    CHAIN[selectedChainObjKey].rpcUrl
+  );
   const tokenContract = new ethers.Contract(tokenAddress, TOKEN_ABI, provider);
   return await tokenContract.symbol();
 }
 
-async function getERC20TokenBalanceOf(tokenAddress, address) {
-  const provider = new ethers.providers.JsonRpcProvider(CHAIN.rpcUrl);
+async function getERC20TokenBalanceOf(
+  tokenAddress,
+  address,
+  selectedChainObjKey
+) {
+  const provider = new ethers.providers.JsonRpcProvider(
+    CHAIN[selectedChainObjKey].rpcUrl
+  );
   const tokenContract = new ethers.Contract(tokenAddress, TOKEN_ABI, provider);
 
   const balance = await tokenContract.balanceOf(address);

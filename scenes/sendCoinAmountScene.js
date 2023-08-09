@@ -11,8 +11,15 @@ const sendCoinAmountStep = new Scenes.BaseScene(sendCoinAmountScene);
 
 sendCoinAmountStep.enter(async (ctx) => {
   const wallet = getWalletByName(ctx, ctx.session.selectedWalletName);
-  const selectedWalletHtml = await getSelectedWalletHtml(wallet);
-  const htmlMessage = `📤 Send ${CHAIN.currency}\n\n${selectedWalletHtml}\n\nHow much are we sending?\n\nPlease reply with ${CHAIN.currency} amount to send.`;
+  const selectedChainObjKey = ctx.session.selectedChainObjKey;
+
+  const selectedWalletHtml = await getSelectedWalletHtml(
+    wallet,
+    "",
+    selectedChainObjKey
+  );
+
+  const htmlMessage = `📤 Send ${CHAIN[selectedChainObjKey].currency}\n\n${selectedWalletHtml}\n\nHow much are we sending?\n\nPlease reply with ${CHAIN[selectedChainObjKey].currency} amount to send.`;
   ctx.replyWithHTML(htmlMessage);
 });
 
@@ -20,18 +27,20 @@ sendCoinAmountStep.on("text", async (ctx) => {
   try {
     const sendAmount = Number.parseFloat(ctx.message.text);
     const wallet = getWalletByName(ctx, ctx.session.selectedWalletName);
+    const selectedChainObjKey = ctx.session.selectedChainObjKey;
 
     const pendingReply = await ctx.reply("pending...");
     try {
       const { transaction } = await sendToken(
         sendAmount,
         ctx.session.recieverAddress,
-        wallet.privateKey
+        wallet.privateKey,
+        selectedChainObjKey
       );
 
       ctx.deleteMessage(pendingReply.message_id);
       const pendingTxHashReply = await ctx.reply(
-        `⏱️ Transaction Pending!\n\nTransaction hash:\n${CHAIN.explorerUrl}/tx/${transaction.hash}`
+        `⏱️ Transaction Pending!\n\nTransaction hash:\n${CHAIN[selectedChainObjKey].explorerUrl}/tx/${transaction.hash}`
       );
 
       const receipt = await transaction.wait();
@@ -39,7 +48,7 @@ sendCoinAmountStep.on("text", async (ctx) => {
 
       if (receipt.status === 1) {
         ctx.replyWithHTML(
-          `✅ Transaction Confirmed!\n\nTransaction hash:\n${CHAIN.explorerUrl}/tx/${receipt.transactionHash}`
+          `✅ Transaction Confirmed!\n\nTransaction hash:\n${CHAIN[selectedChainObjKey].explorerUrl}/tx/${receipt.transactionHash}`
         );
       } else {
         ctx.replyWithHTML(`😔 Failed to send ${receipt}`);
@@ -53,6 +62,7 @@ sendCoinAmountStep.on("text", async (ctx) => {
   }
 
   delete ctx.session.selectedWalletName;
+  delete ctx.session.selectedChainObjKey;
   delete ctx.session.recieverAddress;
   ctx.scene.leave();
 });

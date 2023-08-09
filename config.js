@@ -1,9 +1,32 @@
 const CHAIN = {
-  rpcUrl: "https://rpc-mumbai.maticvigil.com",
-  explorerUrl: "https://mumbai.polygonscan.com",
-  name: "Polygon Mumbai Testnet",
-  currency: "MATIC",
-  cbActionKey: "polygon-mumbai-testnet",
+  ethereum: {
+    rpcUrl: "https://eth.drpc.org",
+    explorerUrl: "https://etherscan.io",
+    name: "Ethereum",
+    currency: "ETH",
+    cbActionKey: "ethereum-chain",
+  },
+  polygon: {
+    rpcUrl: "https://polygon-rpc.com",
+    explorerUrl: "https://polygonscan.com",
+    name: "Polygon",
+    currency: "MATIC",
+    cbActionKey: "polygon-chain",
+  },
+  bsc: {
+    rpcUrl: "https://bsc.meowrpc.com",
+    explorerUrl: "https://bscscan.com",
+    name: "BSC",
+    currency: "BNB",
+    cbActionKey: "bsc-chain",
+  },
+  "mumbai-testnet": {
+    rpcUrl: "https://rpc-mumbai.maticvigil.com",
+    explorerUrl: "https://mumbai.polygonscan.com",
+    name: "Polygon Mumbai Testnet",
+    currency: "MATIC (Mumbai)",
+    cbActionKey: "polygon-mumbai-testnet",
+  },
 };
 
 const TOKEN_ABI = [
