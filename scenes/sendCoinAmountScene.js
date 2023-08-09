@@ -23,13 +23,20 @@ sendCoinAmountStep.on("text", async (ctx) => {
 
     const pendingReply = await ctx.reply("pending...");
     try {
-      const { receipt } = await sendToken(
+      const { transaction } = await sendToken(
         sendAmount,
         ctx.session.recieverAddress,
         wallet.privateKey
       );
 
       ctx.deleteMessage(pendingReply.message_id);
+      const pendingTxHashReply = await ctx.reply(
+        `⏱️ Transaction Pending!\n\nTransaction hash:\n${CHAIN.explorerUrl}/tx/${transaction.hash}`
+      );
+
+      const receipt = await transaction.wait();
+      ctx.deleteMessage(pendingTxHashReply.message_id);
+
       if (receipt.status === 1) {
         ctx.replyWithHTML(
           `✅ Transaction Confirmed!\n\nTransaction hash:\n${CHAIN.explorerUrl}/tx/${receipt.transactionHash}`

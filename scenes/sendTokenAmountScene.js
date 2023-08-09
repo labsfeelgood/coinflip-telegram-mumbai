@@ -39,7 +39,7 @@ sendTokenAmountStep.on("text", async (ctx) => {
 
     const pendingReply = await ctx.reply("pending...");
     try {
-      const { receipt } = await sendERC20Token(
+      const { transaction } = await sendERC20Token(
         ctx.session.tokenAddress,
         sendAmount,
         ctx.session.recieverAddress,
@@ -47,6 +47,13 @@ sendTokenAmountStep.on("text", async (ctx) => {
       );
 
       ctx.deleteMessage(pendingReply.message_id);
+      const pendingTxHashReply = await ctx.reply(
+        `⏱️ Transaction Pending!\n\nTransaction hash:\n${CHAIN.explorerUrl}/tx/${transaction.hash}`
+      );
+
+      const receipt = await transaction.wait();
+      ctx.deleteMessage(pendingTxHashReply.message_id);
+
       if (receipt.status === 1) {
         ctx.replyWithHTML(
           `✅ Transaction Confirmed!\n\nTransaction hash:\n${CHAIN.explorerUrl}/tx/${receipt.transactionHash}`

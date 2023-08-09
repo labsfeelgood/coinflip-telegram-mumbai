@@ -6,6 +6,8 @@ const {
   chainAction,
   dynamicWalletAction,
   getWalletByName,
+  btnDeleteWalletAction,
+  dynamicDeleteWalletAction,
 } = require("./utils");
 const { CHAIN } = require("./config");
 
@@ -58,10 +60,21 @@ bot.action("wallets", async (ctx) => {
   await walletsCommand(ctx, ctx.session.wallets);
 });
 
+// back buttons
+
 bot.action("back-to-main-menu", async (ctx) => {
   ctx.deleteMessage();
+  delete ctx.session.selectedDeleteWalletName;
   await menuCommand(ctx, ctx.session.wallets);
 });
+
+bot.action("back-to-wallets", async (ctx) => {
+  ctx.deleteMessage();
+  delete ctx.session.selectedWalletName;
+  await walletsCommand(ctx, ctx.session.wallets);
+});
+
+// create wallet buttons
 
 bot.action("import-existing-wallet", (ctx) => {
   ctx.scene.enter(importWalletScene);
@@ -71,15 +84,11 @@ bot.action("generate-wallet-seed", (ctx) => {
   ctx.scene.enter(generateWalletSeedScene);
 });
 
+// send buttons
+
 bot.action(CHAIN.cbActionKey, async (ctx) => {
   ctx.deleteMessage();
   await chainAction(ctx, ctx.session.wallets);
-});
-
-bot.action("back-to-wallets", async (ctx) => {
-  ctx.deleteMessage();
-  delete ctx.session.selectedWalletName;
-  await walletsCommand(ctx, ctx.session.wallets);
 });
 
 bot.action(/^wallet-/, async (ctx) => {
@@ -96,6 +105,36 @@ bot.action("send-coin", async (ctx) => {
 
 bot.action("send-token", async (ctx) => {
   ctx.scene.enter(sendTokenAddressScene);
+});
+
+// delete buttons
+
+bot.action("btn-delete-wallet", async (ctx) => {
+  ctx.deleteMessage();
+  await btnDeleteWalletAction(ctx, ctx.session.wallets);
+});
+
+bot.action(/^delete-wallet-/, async (ctx) => {
+  ctx.deleteMessage();
+  const walletName = ctx.update.callback_query.data.split("-")[2];
+  ctx.session.selectedDeleteWalletName = walletName;
+  const wallet = getWalletByName(ctx, walletName);
+  await dynamicDeleteWalletAction(ctx, wallet);
+});
+
+bot.action("confirm-delete-wallet", async (ctx) => {
+  ctx.deleteMessage();
+  ctx.session.wallets = ctx.session.wallets.filter(
+    (_wallet) => _wallet.name !== ctx.session.selectedDeleteWalletName
+  );
+
+  delete ctx.session.selectedDeleteWalletName;
+
+  if (ctx.session.wallets.length) {
+    await btnDeleteWalletAction(ctx, ctx.session.wallets);
+  } else {
+    await walletsCommand(ctx, ctx.session.wallets);
+  }
 });
 
 bot.launch();

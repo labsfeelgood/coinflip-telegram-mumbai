@@ -166,7 +166,7 @@ const deleteWalletWarningMsg =
 // show delete wallet action
 async function btnDeleteWalletAction(ctx, wallets) {
   const { htmlMessage: _htmlMessage } = await walletsList(wallets);
-  const htmlMessage = `Please select a wallet to delete:\n\n${_htmlMessage}\n\n\n\n${deleteWalletWarningMsg}`;
+  const htmlMessage = `Please select a wallet to delete:\n\n${_htmlMessage}\n\n${deleteWalletWarningMsg}`;
 
   const walletsBtns = wallets.map((wallet) => {
     return createCallBackBtn(wallet.name, `delete-wallet-${wallet.name}`);
@@ -193,10 +193,7 @@ async function dynamicDeleteWalletAction(ctx, wallet) {
     "✅ Confirm Delete",
     "confirm-delete-wallet"
   );
-  const cancelDeleteBtn = createCallBackBtn(
-    "❌ Cancel",
-    "cancel-delete-wallet"
-  );
+  const cancelDeleteBtn = createCallBackBtn("❌ Cancel", "back-to-main-menu");
 
   const inlineKeyboard = [[confirmDeleteBtn, cancelDeleteBtn]];
   replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
@@ -213,22 +210,5 @@ module.exports = {
   chainAction,
   dynamicWalletAction,
   btnDeleteWalletAction,
-  dynamicDeleteWalletAction
+  dynamicDeleteWalletAction,
 };
-
-
-/**
- 
-bot.action("btn-delete-wallet", async (ctx) => {
-  ctx.deleteMessage();
-  await btnDeleteWalletAction(ctx, ctx.session.wallets);
-});
-
-bot.action(/^delete-wallet-/, async (ctx) => {
-  ctx.deleteMessage();
-  const walletName = ctx.update.callback_query.data.split("-")[2];
-  ctx.session.selectedDeleteWalletName = walletName;
-  const wallet = getWalletByName(ctx, walletName);
-  await dynamicDeleteWalletAction(ctx, wallet);
-});
- */

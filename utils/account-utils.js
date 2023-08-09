@@ -50,10 +50,9 @@ async function sendToken(amount, to, privateKey) {
     to,
     value: ethers.utils.parseEther(amount.toString()),
   };
-  const transaction = await wallet.sendTransaction(tx);
 
-  const receipt = await transaction.wait();
-  return { transaction, receipt };
+  const transaction = await wallet.sendTransaction(tx);
+  return { transaction };
 }
 
 async function sendERC20Token(tokenAddress, amount, to, privateKey) {
@@ -65,8 +64,7 @@ async function sendERC20Token(tokenAddress, amount, to, privateKey) {
   const amountToSend = ethers.utils.parseUnits(amount, tokenDecimals);
 
   const transaction = await tokenContract.transfer(to, amountToSend);
-  const receipt = await transaction.wait();
-  return { transaction, receipt };
+  return { transaction };
 }
 
 async function getERC20TokenSymbol(tokenAddress) {
