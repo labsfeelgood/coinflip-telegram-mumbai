@@ -43,7 +43,7 @@ bot.use(session());
 bot.use(stage.middleware());
 
 bot.command("start", (ctx) => {
-  const mdMessage = `Welcome to EthWalletBot\\!\n\nTo begin setting up and using your EthWallet, submit the /menu command`;
+  const mdMessage = `Welcome to DracoBot\\!\n\nTo begin setting up and using your EthWallet, submit the /menu command`;
   ctx.replyWithMarkdownV2(mdMessage);
 });
 
