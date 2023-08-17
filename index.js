@@ -57,7 +57,7 @@ bot.command("wallets", async (ctx) => {
 bot.action("play", async (ctx) => {
   ctx.deleteMessage();
   delete ctx.session.selectedPlayWalletName;
-  await playCommand(ctx, ctx.session.wallet);
+  await playCommand(ctx, ctx.session.wallets);
 });
 
 bot.action("wallets", async (ctx) => {
