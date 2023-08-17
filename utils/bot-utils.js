@@ -135,9 +135,62 @@ async function menuCommand(ctx, wallets) {
   }
 
   const walletsButton = createCallBackBtn("Wallets", "wallets");
-  const inlineKeyboard = [[walletsButton]];
+  const playButton = createCallBackBtn("Play", "play");
+  const inlineKeyboard = [[walletsButton, playButton]];
 
   ctx.deleteMessage(processingReply.message_id);
+  replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
+}
+
+// show Play commands
+async function playCommand(ctx, wallets) {
+  let htmlMessage = "";
+  const inlineKeyboard = [];
+  const processingReply = await ctx.reply("processing...");
+
+  if (wallets && wallets.length) {
+    const { htmlMessage: _htmlMessage } = await walletsList(wallets);
+    htmlMessage = `Please select a wallet to play:\n\n${_htmlMessage}`;
+
+    const walletsBtns = wallets.map((wallet) => {
+      return createCallBackBtn(wallet.name, `play-wallet-${wallet.name}`);
+    });
+    const backToMainMenu = createCallBackBtn(
+      "⬅️ Back to Main Menu",
+      "back-to-main-menu"
+    );
+
+    inlineKeyboard.push(walletsBtns, [backToMainMenu]);
+  } else {
+    htmlMessage =
+      "<b>⚠️ There are no active wallets associated with your account.</b>\n\nTo play, you need at least one active wallet.";
+
+    const goToWalletsMenu = createCallBackBtn(
+      "⬆️ Go to Wallets Menu",
+      "wallets"
+    );
+
+    inlineKeyboard.push([goToWalletsMenu]);
+  }
+
+  ctx.deleteMessage(processingReply.message_id);
+  replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
+}
+
+// show dynamic play wallet action
+async function dynamicPlayWalletAction(ctx, wallet) {
+  let htmlMessage = await getSelectedWalletHtml(
+    wallet,
+    "Selected wallet for play:\n\n"
+  );
+
+  htmlMessage = `${htmlMessage}\n\n\n\nℹ️ Press one of the buttons below to choose a coin.`;
+
+  const headsBtn = createCallBackBtn("🤯 Heads", "heads-coin");
+  const tailsBtn = createCallBackBtn("🦘 Tails", "tails-coin");
+  const backToPlayMenu = createCallBackBtn("⬅️ Back to Play Menu", "play");
+
+  const inlineKeyboard = [[headsBtn, tailsBtn], [backToPlayMenu]];
   replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
 }
 
@@ -167,19 +220,10 @@ async function walletsCommand(ctx, wallets) {
       "btn-delete-wallet"
     );
 
-    const chainBtns = [];
-    for (const chainKey in CHAIN) {
-      chainBtns.push(
-        createCallBackBtn(
-          `🔌 ${CHAIN[chainKey].name}`,
-          CHAIN[chainKey].cbActionKey
-        )
-      );
-    }
-    inlineKeyboard.push([deleteWalletBtn], chainBtns);
+    inlineKeyboard.push([deleteWalletBtn]);
 
     const { htmlMessage: _htmlMessage } = await walletsList(wallets);
-    htmlMessage += `${_htmlMessage}\n👇 Pick a chain we're interacting with:`;
+    htmlMessage += `${_htmlMessage}`;
   } else {
     htmlMessage =
       "<b>⚠️ There are no active wallets associated with your account.</b>\n\nYou can either link an already existing wallet or create a new wallet seed from the menu below.";
@@ -188,51 +232,6 @@ async function walletsCommand(ctx, wallets) {
   inlineKeyboard.push([backToMenuBtn]);
 
   ctx.deleteMessage(processingReply.message_id);
-  replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
-}
-
-// show chain action
-async function chainAction(ctx, wallets) {
-  const processingReply = await ctx.reply("processing...");
-
-  const { htmlMessage: _htmlMessage } = await walletsList(
-    wallets,
-    ctx.session.selectedChainObjKey
-  );
-  const htmlMessage = `Select Wallet:\n\n${_htmlMessage}`;
-
-  const walletsBtns = wallets.map((wallet) => {
-    return createCallBackBtn(wallet.name, `wallet-${wallet.name}`);
-  });
-  const backToWalletsBtn = createCallBackBtn(
-    "⬅️ Back to Wallets",
-    "back-to-wallets"
-  );
-  const inlineKeyboard = [walletsBtns, [backToWalletsBtn]];
-
-  ctx.deleteMessage(processingReply.message_id);
-  replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
-}
-
-// show dynamic wallet action
-async function dynamicWalletAction(ctx, wallet) {
-  const htmlMessage = await getSelectedWalletHtml(
-    wallet,
-    "",
-    ctx.session.selectedChainObjKey
-  );
-
-  const sendCoinBtn = createCallBackBtn(
-    `📤 Send ${CHAIN[ctx.session.selectedChainObjKey].currency}`,
-    "send-coin"
-  );
-  const sendTokenBtn = createCallBackBtn(`📤 Send Token`, "send-token");
-  const backToWalletsBtn = createCallBackBtn(
-    "⬅️ Back to Selection",
-    "back-to-wallets"
-  );
-
-  const inlineKeyboard = [[sendCoinBtn, sendTokenBtn], [backToWalletsBtn]];
   replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
 }
 
@@ -286,9 +285,9 @@ module.exports = {
   replyWithHTMLAndInlineKeyboard,
   createCallBackBtn,
   walletsCommand,
+  playCommand,
   menuCommand,
-  chainAction,
-  dynamicWalletAction,
   btnDeleteWalletAction,
   dynamicDeleteWalletAction,
+  dynamicPlayWalletAction,
 };

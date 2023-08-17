@@ -1,25 +1,4 @@
 const CHAIN = {
-  ethereum: {
-    rpcUrl: "https://eth.drpc.org",
-    explorerUrl: "https://etherscan.io",
-    name: "Ethereum",
-    currency: "ETH",
-    cbActionKey: "ethereum-chain",
-  },
-  polygon: {
-    rpcUrl: "https://polygon-rpc.com",
-    explorerUrl: "https://polygonscan.com",
-    name: "Polygon",
-    currency: "MATIC",
-    cbActionKey: "polygon-chain",
-  },
-  bsc: {
-    rpcUrl: "https://bsc.meowrpc.com",
-    explorerUrl: "https://bscscan.com",
-    name: "BSC",
-    currency: "BNB",
-    cbActionKey: "bsc-chain",
-  },
   "mumbai-testnet": {
     rpcUrl: "https://rpc-mumbai.maticvigil.com",
     explorerUrl: "https://mumbai.polygonscan.com",
@@ -36,7 +15,10 @@ const TOKEN_ABI = [
   "function balanceOf(address account) external view returns (uint256)",
 ];
 
+const COIN_FLIP_CONTRACT = "0x6EE8bBb9661235CE9d09F261B1D05f72C6795c83";
+
 module.exports = {
   CHAIN,
   TOKEN_ABI,
+  COIN_FLIP_CONTRACT,
 };

@@ -1,15 +1,15 @@
 require("dotenv").config();
 const { Telegraf, Scenes, session } = require("telegraf");
+
 const {
   walletsCommand,
+  playCommand,
   menuCommand,
-  chainAction,
-  dynamicWalletAction,
   getWalletByName,
   btnDeleteWalletAction,
   dynamicDeleteWalletAction,
+  dynamicPlayWalletAction,
 } = require("./utils");
-const { CHAIN } = require("./config");
 
 const {
   importWalletScene,
@@ -17,33 +17,26 @@ const {
   chooseWalletNameStep,
   generateWalletSeedScene,
   generateWalletSeedStep,
-  sendCoinReceiverScene,
-  sendCoinReceiverStep,
-  sendCoinAmountStep,
-  sendTokenAddressScene,
-  sendTokenAddressStep,
-  sendTokenReceiverStep,
-  sendTokenAmountStep,
+  playAmountScene,
+  playAmountStep,
 } = require("./scenes");
 
-const bot = new Telegraf(process.env.ETH_WALLET_TELEGRAM_BOT_TOKEN);
+const bot = new Telegraf(process.env.COINFLIP_TELEGRAM_BOT_TOKEN);
 
 const stage = new Scenes.Stage([
   importWalletStep,
   chooseWalletNameStep,
   generateWalletSeedStep,
-  sendCoinReceiverStep,
-  sendCoinAmountStep,
-  sendTokenAmountStep,
-  sendTokenReceiverStep,
-  sendTokenAddressStep,
+  playAmountStep,
 ]);
 
 bot.use(session());
 bot.use(stage.middleware());
 
+// commands
+
 bot.command("start", (ctx) => {
-  const mdMessage = `Welcome to DracoBot\\!\n\nTo begin setting up and using your EthWallet, submit the /menu command`;
+  const mdMessage = `Welcome to DracoFlipBot\\!\n\nTo begin setting up and using DracoFlip, submit the /menu command`;
   ctx.replyWithMarkdownV2(mdMessage);
 });
 
@@ -51,8 +44,20 @@ bot.command("menu", async (ctx) => {
   await menuCommand(ctx, ctx.session.wallets);
 });
 
+bot.command("play", async (ctx) => {
+  await playCommand(ctx, ctx.session.wallets);
+});
+
 bot.command("wallets", async (ctx) => {
   await walletsCommand(ctx, ctx.session.wallets);
+});
+
+// menu actions
+
+bot.action("play", async (ctx) => {
+  ctx.deleteMessage();
+  delete ctx.session.selectedPlayWalletName;
+  await playCommand(ctx, ctx.session.wallet);
 });
 
 bot.action("wallets", async (ctx) => {
@@ -65,14 +70,8 @@ bot.action("wallets", async (ctx) => {
 bot.action("back-to-main-menu", async (ctx) => {
   ctx.deleteMessage();
   delete ctx.session.selectedDeleteWalletName;
+  delete ctx.session.selectedPlayWalletName;
   await menuCommand(ctx, ctx.session.wallets);
-});
-
-bot.action("back-to-wallets", async (ctx) => {
-  ctx.deleteMessage();
-  delete ctx.session.selectedWalletName;
-  delete ctx.session.selectedChainObjKey;
-  await walletsCommand(ctx, ctx.session.wallets);
 });
 
 // create wallet buttons
@@ -85,48 +84,26 @@ bot.action("generate-wallet-seed", (ctx) => {
   ctx.scene.enter(generateWalletSeedScene);
 });
 
-// chain buttons
+// play buttons
 
-bot.action(CHAIN["mumbai-testnet"].cbActionKey, async (ctx) => {
+bot.action(/^play-wallet-/, async (ctx) => {
   ctx.deleteMessage();
-  ctx.session.selectedChainObjKey = "mumbai-testnet";
-  await chainAction(ctx, ctx.session.wallets);
-});
-
-bot.action(CHAIN["ethereum"].cbActionKey, async (ctx) => {
-  ctx.deleteMessage();
-  ctx.session.selectedChainObjKey = "ethereum";
-  await chainAction(ctx, ctx.session.wallets);
-});
-
-bot.action(CHAIN["polygon"].cbActionKey, async (ctx) => {
-  ctx.deleteMessage();
-  ctx.session.selectedChainObjKey = "polygon";
-  await chainAction(ctx, ctx.session.wallets);
-});
-
-bot.action(CHAIN["bsc"].cbActionKey, async (ctx) => {
-  ctx.deleteMessage();
-  ctx.session.selectedChainObjKey = "bsc";
-  await chainAction(ctx, ctx.session.wallets);
-});
-
-// send buttons
-
-bot.action(/^wallet-/, async (ctx) => {
-  ctx.deleteMessage();
-  const walletName = ctx.update.callback_query.data.split("-")[1];
-  ctx.session.selectedWalletName = walletName;
+  const walletName = ctx.update.callback_query.data.split("-")[2];
+  ctx.session.selectedPlayWalletName = walletName;
   const wallet = getWalletByName(ctx, walletName);
-  await dynamicWalletAction(ctx, wallet);
+  await dynamicPlayWalletAction(ctx, wallet);
 });
 
-bot.action("send-coin", async (ctx) => {
-  ctx.scene.enter(sendCoinReceiverScene);
+bot.action("heads-coin", (ctx) => {
+  ctx.deleteMessage();
+  ctx.session.selectedCoin = "Heads";
+  ctx.scene.enter(playAmountScene);
 });
 
-bot.action("send-token", async (ctx) => {
-  ctx.scene.enter(sendTokenAddressScene);
+bot.action("tails-coin", (ctx) => {
+  ctx.deleteMessage();
+  ctx.session.selectedCoin = "Tails";
+  ctx.scene.enter(playAmountScene);
 });
 
 // delete buttons

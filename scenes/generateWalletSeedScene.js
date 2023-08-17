@@ -32,7 +32,7 @@ generateWalletSeedStep.on("text", (ctx) => {
           decrypt(newWallet.privateKey)
         )}\nMnemonic Phrase:\n${makeItClickable(
           decrypt(newWallet.mnemonic)
-        )}\n\nMake sure to save the information above offline. Never send it to anyone, and never hold it in a plain text format on a device connected to the internet. You can also import the wallet above in your Web3 wallet provider (Metamask, Trust Wallet, etc).\n\nOnce you're finished writing down your secret phrase, delete this message. EthWallet will never display this information again.\n\nSubmit the /wallets command to check the wallet.`
+        )}\n\nMake sure to save the information above offline. Never send it to anyone, and never hold it in a plain text format on a device connected to the internet. You can also import the wallet above in your Web3 wallet provider (Metamask, Trust Wallet, etc).\n\nOnce you're finished writing down your secret phrase, delete this message. DracoFlip will never display this information again.\n\nSubmit the /wallets command to check the wallet.`
       );
     }
   }
