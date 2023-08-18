@@ -1,3 +1,3 @@
 # CoinFlip Telegram Bot
 
-invite link - t.me/DracoFlipBot
+invite link - t.me/PsychoCasinoBot

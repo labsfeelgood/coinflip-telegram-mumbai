@@ -8,17 +8,18 @@ const CHAIN = {
   },
 };
 
-const TOKEN_ABI = [
-  "function decimals() external view returns (uint8)",
-  "function transfer(address to, uint256 amount)",
-  "function symbol() external view returns (string)",
-  "function balanceOf(address account) external view returns (uint256)",
+const BOT_NAME = "PsychoBot";
+const COIN_FLIP_ABI = [
+  "function flip(uint256 userBet, bool isTail)",
+  "function pause() external view returns (bool)",
+  "function minBet() external view returns (uint256)",
+  "function maxBet() external view returns (uint256)",
 ];
-
-const COIN_FLIP_CONTRACT = "0x6EE8bBb9661235CE9d09F261B1D05f72C6795c83";
+const COIN_FLIP_CONTRACT = "0x88cd98c7428b0238237291f66D002eee180fC09a";
 
 module.exports = {
+  BOT_NAME,
   CHAIN,
-  TOKEN_ABI,
+  COIN_FLIP_ABI,
   COIN_FLIP_CONTRACT,
 };

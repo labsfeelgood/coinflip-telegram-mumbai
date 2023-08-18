@@ -1,5 +1,10 @@
 const { Markup } = require("telegraf");
-const { formatBalance, getBalance } = require("./account-utils");
+const {
+  formatBalance,
+  getBalance,
+  getMaxBet,
+  getPauseStatus,
+} = require("./account-utils");
 const { CHAIN } = require("../config");
 
 // get wallet total balance
@@ -147,18 +152,31 @@ async function playCommand(ctx, wallets) {
   let htmlMessage = "";
   const inlineKeyboard = [];
   const processingReply = await ctx.reply("processing...");
+  const MAX_BET = await getMaxBet();
+  const pauseStatus = await getPauseStatus();
 
-  if (wallets && wallets.length) {
+  const backToMainMenu = createCallBackBtn(
+    "⬅️ Back to Main Menu",
+    "back-to-main-menu"
+  );
+
+  if (pauseStatus) {
+    htmlMessage =
+      "<b>⚠️ Under Construction. Not taking any new Bets at the moment.</b>";
+
+    inlineKeyboard.push([backToMainMenu]);
+  } else if (Number(MAX_BET) === 0) {
+    htmlMessage =
+      "<b>⚠️ There is no balance in the contract at the moment. No betting.</b>";
+
+    inlineKeyboard.push([backToMainMenu]);
+  } else if (wallets && wallets.length) {
     const { htmlMessage: _htmlMessage } = await walletsList(wallets);
     htmlMessage = `Please select a wallet to play:\n\n${_htmlMessage}`;
 
     const walletsBtns = wallets.map((wallet) => {
       return createCallBackBtn(wallet.name, `play-wallet-${wallet.name}`);
     });
-    const backToMainMenu = createCallBackBtn(
-      "⬅️ Back to Main Menu",
-      "back-to-main-menu"
-    );
 
     inlineKeyboard.push(walletsBtns, [backToMainMenu]);
   } else {

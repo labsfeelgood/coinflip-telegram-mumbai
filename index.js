@@ -1,5 +1,6 @@
 require("dotenv").config();
 const { Telegraf, Scenes, session } = require("telegraf");
+const { BOT_NAME } = require("./config");
 
 const {
   walletsCommand,
@@ -36,7 +37,7 @@ bot.use(stage.middleware());
 // commands
 
 bot.command("start", (ctx) => {
-  const mdMessage = `Welcome to DracoFlipBot\\!\n\nTo begin setting up and using DracoFlip, submit the /menu command`;
+  const mdMessage = `Welcome to ${BOT_NAME}\\!\n\nTo begin setting up and using ${BOT_NAME}, submit the /menu command`;
   ctx.replyWithMarkdownV2(mdMessage);
 });
 
