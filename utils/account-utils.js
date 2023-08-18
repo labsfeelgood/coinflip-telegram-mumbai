@@ -49,11 +49,22 @@ async function flipWrite(amount, isTail, privateKey) {
   const wallet = new ethers.Wallet(decrypt(privateKey), provider);
 
   const contract = new Contract(COIN_FLIP_CONTRACT, COIN_FLIP_ABI, wallet);
-  const transaction = await contract.flip(
-    ethers.utils.parseEther(amount),
-    isTail
-  );
-  return { transaction };
+  const transaction = await contract.flip(isTail, {
+    gasLimit: 999999,
+    value: ethers.utils.parseEther(amount),
+  });
+
+  const newFlip = { listening: true };
+
+  contract.on("NewFlip", (user, amount, isTail, gameId) => {
+    newFlip.gameId = gameId.toString();
+    newFlip.user = user;
+    newFlip.amount = amount.toString();
+    newFlip.isTail = isTail;
+    newFlip.listening = false;
+  });
+
+  return { transaction, newFlip, contract };
 }
 
 function initializeGetter() {
@@ -73,8 +84,20 @@ function initializeGetter() {
       return formatEther(data);
     },
     getPauseStatus: async function () {
-      const data = await contract.pause();
-      return data;
+      return await contract.pause();
+    },
+    getPendingGameId: async function (address) {
+      const gameId = await contract.addressToFlip(address);
+
+      let pendingNewFlip;
+      if (Number(gameId) !== 0) {
+        pendingNewFlip = await contract.flipToAddress(gameId);
+      }
+
+      return { gameId, pendingNewFlip };
+    },
+    getRefundDelay: async function () {
+      return await contract.refundDelay();
     },
   };
 }

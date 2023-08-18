@@ -4,6 +4,8 @@ const {
   getBalance,
   getMaxBet,
   getPauseStatus,
+  formatEther,
+  getPendingGameId,
 } = require("./account-utils");
 const { CHAIN } = require("../config");
 
@@ -197,19 +199,31 @@ async function playCommand(ctx, wallets) {
 
 // show dynamic play wallet action
 async function dynamicPlayWalletAction(ctx, wallet) {
+  const { gameId, pendingNewFlip } = await getPendingGameId(wallet.address);
   let htmlMessage = await getSelectedWalletHtml(
     wallet,
     "Selected wallet for play:\n\n"
   );
 
-  htmlMessage = `${htmlMessage}\n\n\n\nℹ️ Press one of the buttons below to choose a coin.`;
+  if (gameId && Number(gameId) !== 0) {
+    htmlMessage = `${htmlMessage}\n\n\nLast bet is still pending...\n<b>You bet for: </b>${formatEther(
+      pendingNewFlip.userBet
+    )}`;
 
-  const headsBtn = createCallBackBtn("🤯 Heads", "heads-coin");
-  const tailsBtn = createCallBackBtn("🦘 Tails", "tails-coin");
-  const backToPlayMenu = createCallBackBtn("⬅️ Back to Play Menu", "play");
+    ctx.replyWithHTML(htmlMessage);
 
-  const inlineKeyboard = [[headsBtn, tailsBtn], [backToPlayMenu]];
-  replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
+    const { pendingTxScene } = require("../scenes/pendingTxScene");
+    ctx.scene.enter(pendingTxScene);
+  } else {
+    htmlMessage = `${htmlMessage}\n\n\n\nℹ️ Press one of the buttons below to choose a coin.`;
+
+    const headsBtn = createCallBackBtn("🤯 Heads", "heads-coin");
+    const tailsBtn = createCallBackBtn("🦘 Tails", "tails-coin");
+    const backToPlayMenu = createCallBackBtn("⬅️ Back to Play Menu", "play");
+
+    const inlineKeyboard = [[headsBtn, tailsBtn], [backToPlayMenu]];
+    replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
+  }
 }
 
 // show Wallets commands

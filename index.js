@@ -20,6 +20,7 @@ const {
   generateWalletSeedStep,
   playAmountScene,
   playAmountStep,
+  pendingTxStep,
 } = require("./scenes");
 
 const bot = new Telegraf(process.env.COINFLIP_TELEGRAM_BOT_TOKEN);
@@ -29,6 +30,7 @@ const stage = new Scenes.Stage([
   chooseWalletNameStep,
   generateWalletSeedStep,
   playAmountStep,
+  pendingTxStep,
 ]);
 
 bot.use(session());

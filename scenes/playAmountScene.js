@@ -1,7 +1,13 @@
 const { Scenes } = require("telegraf");
 const { getSelectedWalletHtml, getWalletByName } = require("../utils");
 const { CHAIN } = require("../config");
-const { flipWrite, getMinBet, getMaxBet } = require("../utils");
+const {
+  flipWrite,
+  getMinBet,
+  getMaxBet,
+  getBalance,
+  formatEther,
+} = require("../utils");
 
 const playAmountScene = "playAmountScene";
 const playAmountStep = new Scenes.BaseScene(playAmountScene);
@@ -24,12 +30,20 @@ playAmountStep.enter(async (ctx) => {
 
 playAmountStep.on("text", async (ctx) => {
   try {
+    const wallet = getWalletByName(ctx, ctx.session.selectedPlayWalletName);
+
     const sendAmount = Number.parseFloat(ctx.message.text);
     const MIN_BET = await getMinBet();
     const MAX_BET = await getMaxBet();
+    const walletBalance = await getBalance(
+      CHAIN["mumbai-testnet"].rpcUrl,
+      wallet.address
+    );
 
     if (sendAmount === 0) {
       ctx.reply("⚠️ Incorrect bet amount.");
+    } else if (sendAmount > walletBalance) {
+      ctx.reply("⚠️ Incorrect bet amount. Insufficient balance.");
     } else if (sendAmount < MIN_BET) {
       ctx.reply("⚠️ Incorrect bet amount. Need at least minimum bet amount.");
     } else if (sendAmount > MAX_BET) {
@@ -37,11 +51,9 @@ playAmountStep.on("text", async (ctx) => {
         "⚠️ Incorrect bet amount. Amount can't be more than maximum bet amount."
       );
     } else {
-      const wallet = getWalletByName(ctx, ctx.session.selectedPlayWalletName);
-
       const pendingReply = await ctx.reply("pending...");
       try {
-        const { transaction } = await flipWrite(
+        const { transaction, newFlip, contract } = await flipWrite(
           sendAmount.toString(),
           ctx.session.selectedCoin === "Tails",
           wallet.privateKey
@@ -52,15 +64,45 @@ playAmountStep.on("text", async (ctx) => {
           `⏱️ Transaction Pending!\n\nTransaction hash:\n${CHAIN["mumbai-testnet"].explorerUrl}/tx/${transaction.hash}`
         );
 
-        const receipt = await transaction.wait();
-        ctx.deleteMessage(pendingTxHashReply.message_id);
+        try {
+          const receipt = await transaction.wait();
+          ctx.deleteMessage(pendingTxHashReply.message_id);
 
-        if (receipt.status === 1) {
-          ctx.replyWithHTML(
-            `✅ Transaction Confirmed!\n\nTransaction hash:\n${CHAIN["mumbai-testnet"].explorerUrl}/tx/${receipt.transactionHash}`
-          );
-        } else {
-          ctx.replyWithHTML(`😔 Failed to bet ${receipt}`);
+          if (receipt.status === 1) {
+            await ctx.replyWithHTML(
+              `✅ Transaction Confirmed!\n\nTransaction hash:\n${CHAIN["mumbai-testnet"].explorerUrl}/tx/${receipt.transactionHash}`
+            );
+            const bettingReply = await ctx.reply("betting...");
+
+            contract.on(
+              "FlipCompleted",
+              (player, didWin, isTail, amount, gameId) => {
+                ctx.deleteMessage(bettingReply.message_id);
+
+                if (
+                  newFlip.gameId === gameId.toString() &&
+                  player === wallet.address
+                ) {
+                  ctx.replyWithHTML(
+                    `<b>You ${didWin ? "Win" : "Lost"}</b>${
+                      didWin
+                        ? `\nYou will get ${formatEther(
+                            amount.toString()
+                          )} amount of ${
+                            CHAIN["mumbai-testnet"].currency
+                          } as a reward in your wallet`
+                        : ""
+                    }\n\nPlay again /play`
+                  );
+                }
+              }
+            );
+          } else {
+            ctx.replyWithHTML(`😔 Failed to bet ${receipt}`);
+          }
+        } catch (error) {
+          ctx.deleteMessage(pendingTxHashReply.message_id);
+          ctx.replyWithHTML(error.message);
         }
       } catch (error) {
         ctx.deleteMessage(pendingReply.message_id);
