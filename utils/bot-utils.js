@@ -6,6 +6,7 @@ const {
   getPauseStatus,
   formatEther,
   getPendingGameId,
+  getHistory,
 } = require("./account-utils");
 const { CHAIN } = require("../config");
 
@@ -143,10 +144,53 @@ async function menuCommand(ctx, wallets) {
 
   const walletsButton = createCallBackBtn("Wallets", "wallets");
   const playButton = createCallBackBtn("Play", "play");
-  const inlineKeyboard = [[walletsButton, playButton]];
+  const historyButton = createCallBackBtn("History", "history");
+  const inlineKeyboard = [[walletsButton, playButton], [historyButton]];
 
   ctx.deleteMessage(processingReply.message_id);
   replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
+}
+
+// show History commands
+async function historyCommand(ctx) {
+  const gettingHistoryReply = await ctx.reply("Getting History...");
+  const historyList = await getHistory();
+
+  ctx.deleteMessage(gettingHistoryReply.message_id);
+  const backToMainMenu = createCallBackBtn(
+    "⬅️ Back to Main Menu",
+    "back-to-main-menu"
+  );
+
+  let htmlMessage = "";
+
+  if ((historyList ?? []).length) {
+    _htmlMessage = historyList.reduce((acc, history) => {
+      const { didWin, isTail, player, amount } = history;
+
+      const formattedAmount = formatEther(amount);
+      const wager = didWin
+        ? formatBalance(Number(formattedAmount) / 2)
+        : formatBalance(formattedAmount);
+
+      return (
+        acc +
+        `🤖 <b>Player:</b> ${makeItClickable(player)}\n${
+          isTail ? "🦘" : "🤯"
+        } <b>Bet:</b> ${
+          isTail ? "Tails" : "Heads"
+        }\n🤑 <b>Wager:</b> ${wager}\n<b>${
+          didWin ? "✌️ Won" : "😭 Lost"
+        }</b>\n\n`
+      );
+    }, "");
+
+    htmlMessage = `🔖 Last 20 bets\n\n${_htmlMessage}`;
+  } else {
+    htmlMessage = "No History";
+  }
+
+  replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, [[backToMainMenu]]);
 }
 
 // show Play commands
@@ -199,31 +243,31 @@ async function playCommand(ctx, wallets) {
 
 // show dynamic play wallet action
 async function dynamicPlayWalletAction(ctx, wallet) {
-  const { gameId, pendingNewFlip } = await getPendingGameId(wallet.address);
+  // const { gameId, pendingNewFlip } = await getPendingGameId(wallet.address);
   let htmlMessage = await getSelectedWalletHtml(
     wallet,
     "Selected wallet for play:\n\n"
   );
 
-  if (gameId && Number(gameId) !== 0) {
-    htmlMessage = `${htmlMessage}\n\n\nLast bet is still pending...\n<b>You bet for: </b>${formatEther(
-      pendingNewFlip.userBet
-    )}`;
+  // if (gameId && Number(gameId) !== 0) {
+  //   htmlMessage = `${htmlMessage}\n\n\nLast bet is still pending...\n<b>You bet for: </b>${formatEther(
+  //     pendingNewFlip.userBet
+  //   )}`;
 
-    ctx.replyWithHTML(htmlMessage);
+  //   ctx.replyWithHTML(htmlMessage);
 
-    const { pendingTxScene } = require("../scenes/pendingTxScene");
-    ctx.scene.enter(pendingTxScene);
-  } else {
-    htmlMessage = `${htmlMessage}\n\n\n\nℹ️ Press one of the buttons below to choose a coin.`;
+  //   const { pendingTxScene } = require("../scenes/pendingTxScene");
+  //   ctx.scene.enter(pendingTxScene);
+  // } else {
+  htmlMessage = `${htmlMessage}\n\n\n\nℹ️ Press one of the buttons below to choose a coin.`;
 
-    const headsBtn = createCallBackBtn("🤯 Heads", "heads-coin");
-    const tailsBtn = createCallBackBtn("🦘 Tails", "tails-coin");
-    const backToPlayMenu = createCallBackBtn("⬅️ Back to Play Menu", "play");
+  const headsBtn = createCallBackBtn("🤯 Heads", "heads-coin");
+  const tailsBtn = createCallBackBtn("🦘 Tails", "tails-coin");
+  const backToPlayMenu = createCallBackBtn("⬅️ Back to Play Menu", "play");
 
-    const inlineKeyboard = [[headsBtn, tailsBtn], [backToPlayMenu]];
-    replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
-  }
+  const inlineKeyboard = [[headsBtn, tailsBtn], [backToPlayMenu]];
+  replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
+  // }
 }
 
 // show Wallets commands
@@ -322,4 +366,5 @@ module.exports = {
   btnDeleteWalletAction,
   dynamicDeleteWalletAction,
   dynamicPlayWalletAction,
+  historyCommand,
 };

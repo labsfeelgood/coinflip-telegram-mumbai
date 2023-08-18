@@ -72,12 +72,17 @@ playAmountStep.on("text", async (ctx) => {
             await ctx.replyWithHTML(
               `✅ Transaction Confirmed!\n\nTransaction hash:\n${CHAIN["mumbai-testnet"].explorerUrl}/tx/${receipt.transactionHash}`
             );
+
             const bettingReply = await ctx.reply("betting...");
+            const spinningCoinReply = await ctx.replyWithAnimation(
+              "https://i.pinimg.com/originals/1f/3f/71/1f3f71f0ef3470c354aa7cfcf1272b56.gif"
+            );
 
             contract.on(
               "FlipCompleted",
               (player, didWin, isTail, amount, gameId) => {
                 ctx.deleteMessage(bettingReply.message_id);
+                ctx.deleteMessage(spinningCoinReply.message_id);
 
                 if (
                   newFlip.gameId === gameId.toString() &&

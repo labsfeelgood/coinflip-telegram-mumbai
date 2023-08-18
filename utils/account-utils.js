@@ -99,6 +99,9 @@ function initializeGetter() {
     getRefundDelay: async function () {
       return await contract.refundDelay();
     },
+    getHistory: async function () {
+      return await contract.getLastFlipResults(20);
+    },
   };
 }
 

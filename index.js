@@ -5,6 +5,7 @@ const { BOT_NAME } = require("./config");
 const {
   walletsCommand,
   playCommand,
+  historyCommand,
   menuCommand,
   getWalletByName,
   btnDeleteWalletAction,
@@ -20,7 +21,7 @@ const {
   generateWalletSeedStep,
   playAmountScene,
   playAmountStep,
-  pendingTxStep,
+  // pendingTxStep,
 } = require("./scenes");
 
 const bot = new Telegraf(process.env.COINFLIP_TELEGRAM_BOT_TOKEN);
@@ -30,7 +31,7 @@ const stage = new Scenes.Stage([
   chooseWalletNameStep,
   generateWalletSeedStep,
   playAmountStep,
-  pendingTxStep,
+  // pendingTxStep,
 ]);
 
 bot.use(session());
@@ -55,6 +56,16 @@ bot.command("wallets", async (ctx) => {
   await walletsCommand(ctx, ctx.session.wallets);
 });
 
+bot.command("info", (ctx) => {
+  ctx.reply(
+    "The game employs Chainlink VRF to obtain a random number and determine the game outcome. A fee of 25% of the bet amount is charged for participating in the game."
+  );
+});
+
+bot.command("history", async (ctx) => {
+  await historyCommand(ctx);
+});
+
 // menu actions
 
 bot.action("play", async (ctx) => {
@@ -66,6 +77,11 @@ bot.action("play", async (ctx) => {
 bot.action("wallets", async (ctx) => {
   ctx.deleteMessage();
   await walletsCommand(ctx, ctx.session.wallets);
+});
+
+bot.action("history", async (ctx) => {
+  ctx.deleteMessage();
+  await historyCommand(ctx);
 });
 
 // back buttons
