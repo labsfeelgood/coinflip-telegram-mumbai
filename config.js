@@ -1,15 +1,15 @@
 const CHAIN = {
   "mumbai-testnet": {
-    rpcUrl: "https://rpc-mumbai.maticvigil.com",
-    explorerUrl: "https://mumbai.polygonscan.com",
-    name: "Polygon Mumbai Testnet",
-    currency: "MATIC (Mumbai)",
+    // rpcUrl: "https://rpc-mumbai.maticvigil.com",
+    // explorerUrl: "https://mumbai.polygonscan.com",
+    // name: "Polygon Mumbai Testnet",
+    // currency: "MATIC (Mumbai)",
 
-    // rpcUrl:
-    //   "https://arb-mainnet.g.alchemy.com/v2/KWBpSZK-2lBnivRQfYPOKb481_tWzyGL",
-    // explorerUrl: "https://arbiscan.io",
-    // name: "Arbitrum",
-    // currency: "ETH",
+    rpcUrl:
+      "https://arb-mainnet.g.alchemy.com/v2/KWBpSZK-2lBnivRQfYPOKb481_tWzyGL",
+    explorerUrl: "https://arbiscan.io",
+    name: "Arbitrum",
+    currency: "ETH",
 
     cbActionKey: "polygon-mumbai-testnet",
   },
@@ -405,8 +405,8 @@ const COIN_FLIP_ABI = [
 ];
 
 // const COIN_FLIP_CONTRACT = "0x0e146E78F76acF743f563745Bf19d19e5D358C47";
-const COIN_FLIP_CONTRACT = "0x7820620911d69D7a1e4691C1778E9adFFf57B7C6"; // pending
-// const COIN_FLIP_CONTRACT = "0x6371A4a482FB45147d270C17674025e4110eCbf2"; // arbitrum network
+// const COIN_FLIP_CONTRACT = "0x7820620911d69D7a1e4691C1778E9adFFf57B7C6"; // pending
+const COIN_FLIP_CONTRACT = "0x6371A4a482FB45147d270C17674025e4110eCbf2"; // arbitrum network
 
 module.exports = {
   BOT_NAME,
