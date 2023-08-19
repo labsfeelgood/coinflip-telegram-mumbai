@@ -16,6 +16,7 @@ const {
   dynamicDeleteWalletAction,
   dynamicPlayWalletAction,
   refundMessageForWalletName,
+  refundWrite,
 } = require("./utils");
 
 const {
@@ -26,15 +27,14 @@ const {
   generateWalletSeedStep,
   playAmountScene,
   playAmountStep,
-  // pendingTxStep,
 } = require("./scenes");
 
 app.use(express.json());
 const bot = new Telegraf(process.env.COINFLIP_TELEGRAM_BOT_TOKEN);
-app.use(bot.webhookCallback("/secret-path"));
-bot.telegram.setWebhook(
-  "https://arbitrum-draco-flip-telegram-bot.onrender.com/secret-path"
-);
+// app.use(bot.webhookCallback("/secret-path"));
+// bot.telegram.setWebhook(
+//   "https://arbitrum-draco-flip-telegram-bot.onrender.com/secret-path"
+// );
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -45,7 +45,6 @@ const stage = new Scenes.Stage([
   chooseWalletNameStep,
   generateWalletSeedStep,
   playAmountStep,
-  // pendingTxStep,
 ]);
 
 bot.use(session());
@@ -80,9 +79,9 @@ bot.command("history", async (ctx) => {
   await historyCommand(ctx);
 });
 
-// bot.command("refund", async (ctx) => {
-//   await refundCommand(ctx, ctx.session.wallets);
-// });
+bot.command("refund", async (ctx) => {
+  await refundCommand(ctx, ctx.session.wallets);
+});
 
 // menu actions
 
@@ -108,6 +107,7 @@ bot.action("back-to-main-menu", async (ctx) => {
   ctx.deleteMessage();
   delete ctx.session.selectedDeleteWalletName;
   delete ctx.session.selectedPlayWalletName;
+  delete ctx.session.selectedRefundWalletName;
   await menuCommand(ctx, ctx.session.wallets);
 });
 
@@ -175,18 +175,47 @@ bot.action("confirm-delete-wallet", async (ctx) => {
 
 // refund buttons
 
-// bot.action(/^refund-wallet-/, async (ctx) => {
-//   ctx.deleteMessage();
-//   const walletName = ctx.update.callback_query.data.split("-")[2];
-//   await refundMessageForWalletName(ctx, walletName);
-// });
-
-// bot.action("get-refund", (ctx) => {
-//   ctx.reply("Refund Button");
-// });
-
-// bot.launch();
-
-app.listen(port, () => {
-  console.log(`App listening on port ${port}`);
+bot.action(/^refund-wallet-/, async (ctx) => {
+  ctx.deleteMessage();
+  const walletName = ctx.update.callback_query.data.split("-")[2];
+  ctx.session.selectedRefundWalletName = walletName;
+  await refundMessageForWalletName(ctx, walletName);
 });
+
+bot.action("get-refund", async (ctx) => {
+  const pendingReply = await ctx.reply("starting refund...");
+  try {
+    const wallet = getWalletByName(ctx, ctx.session.selectedRefundWalletName);
+    const { transaction } = await refundWrite(wallet.privateKey);
+
+    ctx.deleteMessage(pendingReply.message_id);
+    const pendingTxHashReply = await ctx.reply(
+      `⏱️ Transaction Pending!\n\nTransaction hash:\n${CHAIN["mumbai-testnet"].explorerUrl}/tx/${transaction.hash}`
+    );
+
+    try {
+      const receipt = await transaction.wait();
+      ctx.deleteMessage(pendingTxHashReply.message_id);
+
+      if (receipt.status === 1) {
+        await ctx.replyWithHTML(
+          `✅ Transaction Confirmed!\n\nTransaction hash:\n${CHAIN["mumbai-testnet"].explorerUrl}/tx/${receipt.transactionHash}`
+        );
+      } else {
+        ctx.replyWithHTML(`😔 Failed to refund ${receipt}`);
+      }
+    } catch (error) {
+      ctx.deleteMessage(pendingTxHashReply.message_id);
+      ctx.replyWithHTML(error.message);
+    }
+  } catch (error) {
+    ctx.deleteMessage(pendingReply.message_id);
+    ctx.replyWithHTML(error.message);
+  }
+});
+
+bot.launch();
+
+// app.listen(port, () => {
+//   console.log(`App listening on port ${port}`);
+// });

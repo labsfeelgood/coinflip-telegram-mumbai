@@ -244,20 +244,20 @@ async function playCommand(ctx, wallets) {
 
 // show dynamic play wallet action
 async function dynamicPlayWalletAction(ctx, wallet) {
-  // const { gameId, pendingNewFlip } = await getPendingGameId(wallet.address);
+  const { gameId, pendingNewFlip } = await getPendingGameId(wallet.address);
   let htmlMessage = await getSelectedWalletHtml(
     wallet,
     "Selected wallet for play:\n\n"
   );
 
-  // if (gameId && Number(gameId) !== 0) {
-  //   htmlMessage = `${htmlMessage}\n\n\nLast bet is still pending...\n<b>You bet for: </b>${formatEther(
-  //     pendingNewFlip.userBet
-  //   )}\n\ncheck /refund command`;
+  if (gameId && Number(gameId) !== 0) {
+    htmlMessage = `${htmlMessage}\n\n\nLast bet is still pending...\n<b>You bet for: </b>${formatEther(
+      pendingNewFlip.userBet
+    )}\n\ncheck /refund command`;
 
-  //   ctx.replyWithHTML(htmlMessage);
-  //   return;
-  // }
+    ctx.replyWithHTML(htmlMessage);
+    return;
+  }
 
   htmlMessage = `${htmlMessage}\n\n\n\nℹ️ Press one of the buttons below to choose a coin.`;
 

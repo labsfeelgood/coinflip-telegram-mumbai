@@ -69,6 +69,18 @@ async function flipWrite(amount, isTail, privateKey) {
   return { transaction, newFlip, contract };
 }
 
+async function refundWrite(privateKey) {
+  const provider = new ethers.providers.JsonRpcProvider(
+    CHAIN["mumbai-testnet"].rpcUrl
+  );
+  const wallet = new ethers.Wallet(decrypt(privateKey), provider);
+
+  const contract = new Contract(COIN_FLIP_CONTRACT, COIN_FLIP_ABI, wallet);
+  const transaction = await contract.getRefund({ gasLimit: 999999 });
+
+  return { transaction };
+}
+
 function initializeGetter() {
   const provider = new ethers.providers.JsonRpcProvider(
     CHAIN["mumbai-testnet"].rpcUrl
@@ -113,5 +125,6 @@ module.exports = {
   formatBalance,
   formatEther,
   flipWrite,
+  refundWrite,
   ...initializeGetter(),
 };
