@@ -1,6 +1,9 @@
 require("dotenv").config();
 const { Telegraf, Scenes, session } = require("telegraf");
 const { BOT_NAME } = require("./config");
+const express = require("express");
+const app = express();
+const port = process.env.PORT || 3000;
 
 const {
   walletsCommand,
@@ -24,7 +27,16 @@ const {
   // pendingTxStep,
 } = require("./scenes");
 
+app.use(express.json());
 const bot = new Telegraf(process.env.COINFLIP_TELEGRAM_BOT_TOKEN);
+app.use(bot.webhookCallback("/secret-path"));
+bot.telegram.setWebhook(
+  "https://arbitrum-draco-flip-telegram-bot.onrender.com/secret-path"
+);
+
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
 
 const stage = new Scenes.Stage([
   importWalletStep,
@@ -155,4 +167,8 @@ bot.action("confirm-delete-wallet", async (ctx) => {
   }
 });
 
-bot.launch();
+// bot.launch();
+
+app.listen(port, () => {
+  console.log(`App listening on port ${port}`);
+});
