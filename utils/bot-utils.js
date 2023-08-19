@@ -6,6 +6,7 @@ const {
   getPauseStatus,
   formatEther,
   getPendingGameId,
+  getRefundDelay,
   getHistory,
 } = require("./account-utils");
 const { CHAIN } = require("../config");
@@ -252,13 +253,12 @@ async function dynamicPlayWalletAction(ctx, wallet) {
   // if (gameId && Number(gameId) !== 0) {
   //   htmlMessage = `${htmlMessage}\n\n\nLast bet is still pending...\n<b>You bet for: </b>${formatEther(
   //     pendingNewFlip.userBet
-  //   )}`;
+  //   )}\n\ncheck /refund command`;
 
   //   ctx.replyWithHTML(htmlMessage);
+  //   return;
+  // }
 
-  //   const { pendingTxScene } = require("../scenes/pendingTxScene");
-  //   ctx.scene.enter(pendingTxScene);
-  // } else {
   htmlMessage = `${htmlMessage}\n\n\n\nℹ️ Press one of the buttons below to choose a coin.`;
 
   const headsBtn = createCallBackBtn("🤯 Heads", "heads-coin");
@@ -267,7 +267,68 @@ async function dynamicPlayWalletAction(ctx, wallet) {
 
   const inlineKeyboard = [[headsBtn, tailsBtn], [backToPlayMenu]];
   replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
-  // }
+}
+
+// get Refund message for a wallet
+async function refundMessageForWalletName(ctx, walletName) {
+  const wallet = getWalletByName(ctx, walletName);
+  const { gameId, pendingNewFlip } = await getPendingGameId(wallet.address);
+
+  if (gameId && Number(gameId) !== 0) {
+    const pendingBetTimestamp = pendingNewFlip.time;
+    const refundDelay = await getRefundDelay();
+
+    const diffBtwDatesInSec = Math.floor(
+      (new Date() - new Date(pendingBetTimestamp * 1000)) / 1000
+    );
+
+    if (diffBtwDatesInSec >= refundDelay) {
+      clearInterval(intervalId);
+
+      const inlineKeyboard = [
+        [createCallBackBtn("💸 Get Refund", "get-refund")],
+      ];
+      replyWithHTMLAndInlineKeyboard(
+        ctx,
+        `You can get your refund back in ${walletName} wallet`,
+        inlineKeyboard
+      );
+    } else {
+      ctx.replyWithHTML(
+        `Seconds left for refund in <b>${walletName}</b> wallet: ${diffBtwDatesInSec}`
+      );
+    }
+  } else {
+    ctx.reply(`No Refund for <b>${walletName}</b> Wallet`);
+  }
+}
+
+// show Refund commands
+async function refundCommand(ctx, wallets) {
+  if ((wallets ?? []).length === 0) {
+    ctx.reply("No Refund");
+    return;
+  }
+
+  const backToMainMenu = createCallBackBtn(
+    "⬅️ Back to Main Menu",
+    "back-to-main-menu"
+  );
+  const inlineKeyboard = [];
+
+  if (ctx.session.selectedPlayWalletName) {
+    refundMessageForWalletName(ctx, ctx.session.selectedPlayWalletName);
+    delete ctx.session.selectedPlayWalletName;
+    return;
+  }
+
+  const walletsBtns = wallets.map((wallet) => {
+    return createCallBackBtn(wallet.name, `refund-wallet-${wallet.name}`);
+  });
+
+  inlineKeyboard.push(walletsBtns, [backToMainMenu]);
+  const htmlMessage = "👇 Choose one wallet to check Refund\n\n";
+  replyWithHTMLAndInlineKeyboard(ctx, htmlMessage, inlineKeyboard);
 }
 
 // show Wallets commands
@@ -367,4 +428,6 @@ module.exports = {
   dynamicDeleteWalletAction,
   dynamicPlayWalletAction,
   historyCommand,
+  refundCommand,
+  refundMessageForWalletName,
 };

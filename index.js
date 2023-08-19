@@ -11,9 +11,11 @@ const {
   historyCommand,
   menuCommand,
   getWalletByName,
+  refundCommand,
   btnDeleteWalletAction,
   dynamicDeleteWalletAction,
   dynamicPlayWalletAction,
+  refundMessageForWalletName,
 } = require("./utils");
 
 const {
@@ -77,6 +79,10 @@ bot.command("info", (ctx) => {
 bot.command("history", async (ctx) => {
   await historyCommand(ctx);
 });
+
+// bot.command("refund", async (ctx) => {
+//   await refundCommand(ctx, ctx.session.wallets);
+// });
 
 // menu actions
 
@@ -166,6 +172,18 @@ bot.action("confirm-delete-wallet", async (ctx) => {
     await walletsCommand(ctx, ctx.session.wallets);
   }
 });
+
+// refund buttons
+
+// bot.action(/^refund-wallet-/, async (ctx) => {
+//   ctx.deleteMessage();
+//   const walletName = ctx.update.callback_query.data.split("-")[2];
+//   await refundMessageForWalletName(ctx, walletName);
+// });
+
+// bot.action("get-refund", (ctx) => {
+//   ctx.reply("Refund Button");
+// });
 
 // bot.launch();
 

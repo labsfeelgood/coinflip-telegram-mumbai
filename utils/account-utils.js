@@ -55,15 +55,17 @@ async function flipWrite(amount, isTail, privateKey) {
   });
 
   const newFlip = { listening: true };
-
-  contract.on("NewFlip", (user, amount, isTail, gameId) => {
+  const handleNewFlipEvent = (user, amount, isTail, gameId) => {
     newFlip.gameId = gameId.toString();
     newFlip.user = user;
     newFlip.amount = amount.toString();
     newFlip.isTail = isTail;
     newFlip.listening = false;
-  });
 
+    contract.removeListener("NewFlip", handleNewFlipEvent);
+  };
+
+  contract.on("NewFlip", handleNewFlipEvent);
   return { transaction, newFlip, contract };
 }
 

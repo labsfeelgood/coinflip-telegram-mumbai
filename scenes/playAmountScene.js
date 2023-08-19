@@ -78,30 +78,40 @@ playAmountStep.on("text", async (ctx) => {
               "https://i.pinimg.com/originals/1f/3f/71/1f3f71f0ef3470c354aa7cfcf1272b56.gif"
             );
 
-            contract.on(
-              "FlipCompleted",
-              (player, didWin, isTail, amount, gameId) => {
-                ctx.deleteMessage(bettingReply.message_id);
-                ctx.deleteMessage(spinningCoinReply.message_id);
+            const handleFlipCompletedEvent = (
+              player,
+              didWin,
+              isTail,
+              amount,
+              gameId
+            ) => {
+              ctx.deleteMessage(bettingReply.message_id);
+              ctx.deleteMessage(spinningCoinReply.message_id);
 
-                if (
-                  newFlip.gameId === gameId.toString() &&
-                  player === wallet.address
-                ) {
-                  ctx.replyWithHTML(
-                    `<b>You ${didWin ? "Win" : "Lost"}</b>${
-                      didWin
-                        ? `\nYou will get ${formatEther(
-                            amount.toString()
-                          )} amount of ${
-                            CHAIN["mumbai-testnet"].currency
-                          } as a reward in your wallet`
-                        : ""
-                    }\n\nPlay again /play`
-                  );
-                }
+              if (
+                newFlip.gameId === gameId.toString() &&
+                player === wallet.address
+              ) {
+                ctx.replyWithHTML(
+                  `<b>You ${didWin ? "Win" : "Lost"}</b>${
+                    didWin
+                      ? `\nYou will get ${formatEther(
+                          amount.toString()
+                        )} amount of ${
+                          CHAIN["mumbai-testnet"].currency
+                        } as a reward in your wallet`
+                      : ""
+                  }\n\nPlay again /play`
+                );
               }
-            );
+
+              contract.removeListener(
+                "FlipCompleted",
+                handleFlipCompletedEvent
+              );
+            };
+
+            contract.on("FlipCompleted", handleFlipCompletedEvent);
           } else {
             ctx.replyWithHTML(`😔 Failed to bet ${receipt}`);
           }
